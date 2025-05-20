@@ -1,0 +1,48 @@
+!pip install fastapi uvicorn pyngrok scikit-learn nest-asyncio
+
+!pip install uvicorn
+
+!pip install "uvicorn[standard]"
+
+import pickle
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+
+X,y=load_iris(return_X_y=True)
+model=RandomForestClassifier()
+model.fit(X,y)
+
+with open("model.pkl","wb") as f:
+  pickle.dump(model,f)
+
+%%writefile app.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+import pickle
+import numpy as np
+
+%%writefile app.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+import pickle
+import numpy as np
+with open("model.pkl","rb") as f:
+  model=pickle.load(f)
+app=FastAPI()
+class InputData(BaseModel):
+  features:list
+@app.post("/predict")
+def predict(data:InputData):
+  input_array=np.array(data.features).reshape(1,-1)
+  prediction=model.predict(input_array)
+  return {"prediction":int(prediction[0])}
+
+import nest_asyncio
+from pyngrok import ngrok
+import uvicorn
+
+nest_asyncio.apply()
+
+#public_url=ngrok.connect(8000)
+#print(f" Your FastAPI app is live at: {public_url}/docs")
+uvicorn.run("app:app",host="0.0.0.0",port=8000)
